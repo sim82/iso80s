@@ -1,0 +1,26 @@
+[package]
+name = "iso80s"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.dev.package."*"]
+opt-level = 3
+
+[features]
+inspector = ["bevy-inspector-egui"]
+
+[dependencies]
+# bevy = { version = "0.7" }
+bevy = { version = "0.7", features = ["dynamic"] }
+bevy-inspector-egui = { version = "0.11", optional = true }
+bevy_prototype_debug_lines = "0.7"
+bevy_mouse_tracking_plugin = "0.2"
+bevy_egui = "0.14"
+egui_extras = "0.18"
+clap = { version = "3", features = ["derive"] }
+lazy_static = "1"
+rand = "0.8"
+serde_yaml = "0.8"
+
