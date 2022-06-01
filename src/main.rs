@@ -49,23 +49,27 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
     // }
 
     let mut pos = Vec::new();
-    for y in 0..4 {
-        for x in 0..4 {
-            let x = x as f32;
-            let y = y as f32;
-            let iso_coord = IsoCoord(Vec2::new(x, y));
-            pos.push(iso_coord);
+    for layer in 0..2 {
+        let mut pos_tmp = Vec::new();
+
+        for y in 0..16 {
+            for x in 0..16 {
+                let layer = layer as f32;
+                let x = x as f32;
+                let y = y as f32;
+                let iso_coord = IsoCoord(Vec2::new(x, y), layer);
+                pos_tmp.push(iso_coord);
+            }
         }
+        pos_tmp.reverse();
+        pos.append(&mut pos_tmp);
     }
-    pos.reverse();
     for iso_coord in pos {
+        let index = if iso_coord.1 == 0.0 { 0 } else { 8 };
         commands
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: iso_state.tileset_atlas.clone(),
-                sprite: TextureAtlasSprite {
-                    index: 0,
-                    ..default()
-                },
+                sprite: TextureAtlasSprite { index, ..default() },
                 // transform: Transform::from_translation(iso_coord.into()),
                 ..default()
             })

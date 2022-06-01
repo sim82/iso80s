@@ -13,11 +13,11 @@ lazy_static! {
 
 #[derive(Component, Reflect, Default, Clone, Copy)]
 #[reflect(Component)]
-pub struct IsoCoord(pub Vec2);
+pub struct IsoCoord(pub Vec2, pub f32);
 
 impl From<&IsoCoord> for Vec3 {
-    fn from(IsoCoord(v): &IsoCoord) -> Self {
-        (*ISO_TO_PIXEL * *v).extend(0.0)
+    fn from(IsoCoord(v, layer): &IsoCoord) -> Self {
+        (*ISO_TO_PIXEL * *v + layer * 16.0 * Vec2::Y).extend(0.0)
     }
 }
 
@@ -37,7 +37,7 @@ pub fn iso_startup_system(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    let texture_handle = asset_server.load("iso_tiles.png");
+    let texture_handle = asset_server.load("iso_tiles_rgb.png");
     let atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(32.0), 8, 8);
     let atlas_handle = texture_atlases.add(atlas);
     iso_state.tileset_atlas = atlas_handle;
