@@ -1,6 +1,9 @@
 use bevy::{diagnostic::DiagnosticsPlugin, input::system::exit_on_esc_system, prelude::*};
 use clap::Parser;
-use iso80s::iso::{IsoCoord, IsoPlugin, IsoState};
+use iso80s::{
+    input::{CursorMarker, InputState},
+    iso::{IsoCoord, IsoPlugin, IsoState},
+};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -32,8 +35,12 @@ fn main() {
         }
     }
 
+    app.add_system(update_preview_tile_system);
     app.run();
 }
+
+#[derive(Component)]
+struct TilePreviewMarker;
 
 fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
     // for i in 0..8 {
@@ -49,7 +56,7 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
     // }
 
     let mut pos = Vec::new();
-    for layer in 0..2 {
+    for layer in 0..3 {
         let mut pos_tmp = Vec::new();
 
         for y in 0..16 {
@@ -65,7 +72,8 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
         pos.append(&mut pos_tmp);
     }
     for iso_coord in pos {
-        let index = if iso_coord.1 == 0.0 { 0 } else { 8 };
+        //let index = if iso_coord.1 == 0.0 { 0 } else { 8 };
+        let index = 15;
         commands
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: iso_state.tileset_atlas.clone(),
@@ -74,5 +82,36 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
                 ..default()
             })
             .insert(iso_coord);
+    }
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: iso_state.tileset_atlas.clone(),
+            sprite: TextureAtlasSprite {
+                index: 32,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(IsoCoord::default())
+        .insert(CursorMarker);
+
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: iso_state.tileset_atlas.clone(),
+            sprite: TextureAtlasSprite {
+                index: 32,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(TilePreviewMarker);
+}
+
+fn update_preview_tile_system(
+    mut query: Query<&mut TextureAtlasSprite, With<TilePreviewMarker>>,
+    input_state: Res<InputState>,
+) {
+    if let Ok(mut sprite) = query.get_single_mut() {
+        sprite.index = input_state.tile_type;
     }
 }

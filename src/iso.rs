@@ -29,6 +29,7 @@ fn iso_coord_update(mut query: Query<(&mut Transform, &IsoCoord), Changed<IsoCoo
 
 #[derive(Default)]
 pub struct IsoState {
+    pub tileset_image: Handle<Image>,
     pub tileset_atlas: Handle<TextureAtlas>,
 }
 
@@ -38,9 +39,10 @@ pub fn iso_startup_system(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let texture_handle = asset_server.load("iso_tiles_rgb.png");
-    let atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(32.0), 8, 8);
+    let atlas = TextureAtlas::from_grid(texture_handle.clone(), Vec2::splat(32.0), 8, 8);
     let atlas_handle = texture_atlases.add(atlas);
     iso_state.tileset_atlas = atlas_handle;
+    iso_state.tileset_image = texture_handle;
 }
 
 pub struct IsoPlugin;
