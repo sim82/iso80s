@@ -11,13 +11,15 @@ lazy_static! {
     pub static ref PIXEL_TO_ISO: Mat2 = ISO_TO_PIXEL.inverse();
 }
 
-#[derive(Component, Reflect, Default, Clone, Copy)]
+#[derive(Component, Reflect, Default, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub struct IsoCoord(pub Vec2, pub f32);
 
 impl From<&IsoCoord> for Vec3 {
     fn from(IsoCoord(v, layer): &IsoCoord) -> Self {
-        (*ISO_TO_PIXEL * *v + layer * 16.0 * Vec2::Y).extend(0.0)
+        // the z value calculation is a bit ad-hoc and only works for v.x + v.y <= 32.0.
+        // but generally it works to a proper z order for rendering the tiles correctly
+        (*ISO_TO_PIXEL * *v + layer * 16.0 * Vec2::Y).extend(32.0 - v.x - v.y + layer)
     }
 }
 

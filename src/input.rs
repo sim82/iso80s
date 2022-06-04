@@ -23,8 +23,10 @@ pub struct InputState {
 }
 
 fn iso_pick_system(
+    mut commands: Commands,
     mouse: Res<MousePosWorld>,
     state: Res<InputState>,
+    iso_state: Res<IsoState>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut query: Query<(&IsoCoord, &mut TextureAtlasSprite), Without<CursorMarker>>,
     mut cursor_query: Query<&mut IsoCoord, With<CursorMarker>>,
@@ -35,7 +37,7 @@ fn iso_pick_system(
         iso_coord.0 = pick_coord;
         iso_coord.1 = layer;
     }
-    for event in mouse_button_input_events.iter() {
+    'outer: for event in mouse_button_input_events.iter() {
         if event.button == MouseButton::Left {
             let offset = 0; // 16 * state.layer as usize;
 
@@ -44,10 +46,23 @@ fn iso_pick_system(
                     && iso_coord.0.y == pick_coord.y
                     && iso_coord.1 == layer
                 {
+                    info!("pick: {:?}", iso_coord);
                     sprite.index = state.tile_type + offset;
-                    break;
+                    break 'outer;
                 }
             }
+            info!("spwan");
+            commands
+                .spawn_bundle(SpriteSheetBundle {
+                    texture_atlas: iso_state.tileset_atlas.clone(),
+                    sprite: TextureAtlasSprite {
+                        index: state.tile_type,
+                        ..default()
+                    },
+                    // transform: Transform::from_translation(iso_coord.into()),
+                    ..default()
+                })
+                .insert(IsoCoord(pick_coord, layer));
         }
     }
 }
