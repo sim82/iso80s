@@ -1,5 +1,5 @@
 use bevy::{
-    input::mouse::MouseButtonInput,
+    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
     math::{Vec2Swizzles, Vec3Swizzles},
     prelude::*,
 };
@@ -9,7 +9,10 @@ use bevy_egui::{
 };
 use bevy_mouse_tracking_plugin::{MousePosPlugin, MousePosWorld};
 
-use crate::iso::{self, IsoCoord, IsoState, PIXEL_TO_ISO};
+use crate::{
+    cmd,
+    iso::{self, IsoCoord, IsoState, PIXEL_TO_ISO},
+};
 
 #[derive(Component)]
 pub struct CursorMarker;
@@ -22,14 +25,13 @@ pub struct InputState {
     texture: Option<egui::TextureId>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn iso_pick_system(
-    mut commands: Commands,
     mouse: Res<MousePosWorld>,
     state: Res<InputState>,
-    iso_state: Res<IsoState>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
-    mut query: Query<(&IsoCoord, &mut TextureAtlasSprite), Without<CursorMarker>>,
     mut cursor_query: Query<&mut IsoCoord, With<CursorMarker>>,
+    mut command_events: EventWriter<(bool, cmd::Command)>,
 ) {
     let layer = state.layer as f32;
     let pick_coord = (*PIXEL_TO_ISO * (mouse.xy() - layer * 16.0 * Vec2::Y)).floor();
@@ -37,33 +39,26 @@ fn iso_pick_system(
         iso_coord.0 = pick_coord;
         iso_coord.1 = layer;
     }
-    'outer: for event in mouse_button_input_events.iter() {
-        if event.button == MouseButton::Left {
-            let offset = 0; // 16 * state.layer as usize;
-
-            for (iso_coord, mut sprite) in query.iter_mut() {
-                if iso_coord.0.x == pick_coord.x
-                    && iso_coord.0.y == pick_coord.y
-                    && iso_coord.1 == layer
-                {
-                    info!("pick: {:?}", iso_coord);
-                    sprite.index = state.tile_type + offset;
-                    break 'outer;
-                }
-            }
-            info!("spwan");
-            commands
-                .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: iso_state.tileset_atlas.clone(),
-                    sprite: TextureAtlasSprite {
-                        index: state.tile_type,
-                        ..default()
-                    },
-                    // transform: Transform::from_translation(iso_coord.into()),
-                    ..default()
-                })
-                .insert(IsoCoord(pick_coord, layer));
+    for event in mouse_button_input_events.iter() {
+        if event.state == ElementState::Released && event.button == MouseButton::Left {
+            let coord = IsoCoord(pick_coord, layer);
+            command_events.send((
+                true,
+                cmd::Command::Single {
+                    coord,
+                    tile_type: state.tile_type,
+                },
+            ));
         }
+    }
+}
+
+fn key_input_system(
+    mut command_events: EventWriter<(bool, cmd::Command)>,
+    input: Res<Input<KeyCode>>,
+) {
+    if input.just_pressed(KeyCode::Z) && input.pressed(KeyCode::LControl) {
+        command_events.send((true, cmd::Command::Undo));
     }
 }
 
@@ -106,6 +101,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<InputState>()
             .add_plugin(MousePosPlugin::SingleCamera)
             .add_system(iso_pick_system)
-            .add_system(input_egui_system);
+            .add_system(input_egui_system)
+            .add_system(key_input_system);
     }
 }

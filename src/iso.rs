@@ -11,7 +11,7 @@ lazy_static! {
     pub static ref PIXEL_TO_ISO: Mat2 = ISO_TO_PIXEL.inverse();
 }
 
-#[derive(Component, Reflect, Default, Clone, Copy, Debug)]
+#[derive(Component, Reflect, Default, Clone, Copy, Debug, PartialEq)]
 #[reflect(Component)]
 pub struct IsoCoord(pub Vec2, pub f32);
 
