@@ -31,7 +31,7 @@ fn iso_pick_system(
     state: Res<InputState>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut cursor_query: Query<&mut IsoCoord, With<CursorMarker>>,
-    mut command_events: EventWriter<(bool, cmd::Command)>,
+    mut command_events: EventWriter<cmd::Command>,
 ) {
     let layer = state.layer as f32;
     let pick_coord = (*PIXEL_TO_ISO * (mouse.xy() - layer * 16.0 * Vec2::Y)).floor();
@@ -39,26 +39,23 @@ fn iso_pick_system(
         iso_coord.0 = pick_coord;
         iso_coord.1 = layer;
     }
+    if pick_coord.x < 0.0 || pick_coord.y < 0.0 {
+        return;
+    }
     for event in mouse_button_input_events.iter() {
         if event.state == ElementState::Released && event.button == MouseButton::Left {
             let coord = IsoCoord(pick_coord, layer);
-            command_events.send((
-                true,
-                cmd::Command::Single {
-                    coord,
-                    tile_type: state.tile_type,
-                },
-            ));
+            command_events.send(cmd::Command::Single {
+                coord,
+                tile_type: state.tile_type,
+            });
         }
     }
 }
 
-fn key_input_system(
-    mut command_events: EventWriter<(bool, cmd::Command)>,
-    input: Res<Input<KeyCode>>,
-) {
+fn key_input_system(mut command_events: EventWriter<cmd::Command>, input: Res<Input<KeyCode>>) {
     if input.just_pressed(KeyCode::Z) && input.pressed(KeyCode::LControl) {
-        command_events.send((true, cmd::Command::Undo));
+        command_events.send(cmd::Command::Undo);
     }
 }
 

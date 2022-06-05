@@ -23,10 +23,13 @@ fn apply_commands_system(
     mut commands: Commands,
     iso_state: Res<IsoState>,
     mut command_state: ResMut<CommandState>,
-    mut command_events: EventReader<(bool, Command)>,
+    mut command_events: EventReader<Command>,
     mut query: Query<(Entity, &IsoCoord, &mut TextureAtlasSprite), Without<CursorMarker>>,
 ) {
-    let mut command_queue: VecDeque<_> = command_events.iter().cloned().collect();
+    let mut command_queue: VecDeque<_> = command_events
+        .iter()
+        .map(|command| (true, *command))
+        .collect();
 
     while let Some((user_generated, command)) = command_queue.pop_back() {
         match command {
@@ -89,7 +92,7 @@ pub struct CommandPlugin;
 impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CommandState>()
-            .add_event::<(bool, Command)>()
+            .add_event::<Command>()
             .add_system(apply_commands_system);
     }
 }
