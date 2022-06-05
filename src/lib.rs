@@ -12,6 +12,7 @@ impl PluginGroup for DefaultPlugins {
         group
             .add(camera::CameraPlugin)
             .add(cmd::CommandPlugin)
+            .add(cmd::predict::PredictPlugin)
             .add(iso::IsoPlugin)
             .add(input::InputPlugin);
     }

@@ -1,6 +1,10 @@
 use bevy::{math::Mat2, prelude::*};
 use lazy_static::lazy_static;
 
+pub mod prelude {
+    pub use super::IsoCoord;
+}
+
 const SIZE: f32 = 32.0;
 
 lazy_static! {
