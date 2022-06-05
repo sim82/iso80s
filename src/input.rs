@@ -23,12 +23,15 @@ pub struct InputState {
     pub layer: i32,
 
     texture: Option<egui::TextureId>,
+
+    last_pos: IsoCoord,
 }
 
 #[allow(clippy::too_many_arguments)]
 fn iso_pick_system(
     mouse: Res<MousePosWorld>,
-    state: Res<InputState>,
+    mut state: ResMut<InputState>,
+    key_input: Res<Input<KeyCode>>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut cursor_query: Query<&mut IsoCoord, With<CursorMarker>>,
     mut command_events: EventWriter<cmd::Command>,
@@ -45,10 +48,30 @@ fn iso_pick_system(
     for event in mouse_button_input_events.iter() {
         if event.state == ElementState::Released && event.button == MouseButton::Left {
             let coord = IsoCoord(pick_coord, layer);
-            command_events.send(cmd::Command::Single {
-                coord,
-                tile_type: state.tile_type,
-            });
+
+            if !key_input.pressed(KeyCode::LShift) {
+                command_events.send(cmd::Command::Single {
+                    coord,
+                    tile_type: state.tile_type,
+                });
+            } else {
+                let d = (coord.0 - state.last_pos.0);
+                let dir = d.clamp(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+                let len = d.length() as usize;
+                info!("dir: {:?}", dir);
+                if dir.x == 0.0 || dir.y == 0.0 {
+                    let mut brush = state.last_pos.0 + dir;
+                    for _ in 0..len {
+                        command_events.send(cmd::Command::Single {
+                            coord: IsoCoord(brush, layer),
+                            tile_type: state.tile_type,
+                        });
+                        brush += dir;
+                    }
+                }
+            }
+
+            state.last_pos = coord;
         }
     }
 }
