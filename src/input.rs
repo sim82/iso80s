@@ -33,41 +33,55 @@ fn iso_pick_system(
     mut state: ResMut<InputState>,
     key_input: Res<Input<KeyCode>>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
-    mut cursor_query: Query<&mut IsoCoord, With<CursorMarker>>,
+    mut cursor_query: Query<(&mut IsoCoord, &mut TextureAtlasSprite), With<CursorMarker>>,
     mut command_events: EventWriter<cmd::Command>,
 ) {
     let layer = state.layer as f32;
     let pick_coord = (*PIXEL_TO_ISO * (mouse.xy() - layer * 16.0 * Vec2::Y)).floor();
-    if let Ok(mut iso_coord) = cursor_query.get_single_mut() {
-        iso_coord.0 = pick_coord;
-        iso_coord.1 = layer;
-    }
+
     if pick_coord.x < 0.0 || pick_coord.y < 0.0 {
         return;
     }
+
+    let coord = IsoCoord(pick_coord, layer);
+
+    let line_mode = if key_input.pressed(KeyCode::LShift) {
+        let d = (coord.0 - state.last_pos.0);
+        let dir = d.clamp(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+        let len = d.length() as usize;
+        info!("dir: {:?}", dir);
+        if dir.x == 0.0 || dir.y == 0.0 {
+            Some((dir, len))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let cursor_index = if line_mode.is_some() { 33 } else { 32 };
+
+    if let Ok((mut iso_coord, mut sprite)) = cursor_query.get_single_mut() {
+        iso_coord.0 = pick_coord;
+        iso_coord.1 = layer;
+        sprite.index = cursor_index;
+    }
+
     for event in mouse_button_input_events.iter() {
         if event.state == ElementState::Released && event.button == MouseButton::Left {
-            let coord = IsoCoord(pick_coord, layer);
-
             if !key_input.pressed(KeyCode::LShift) {
                 command_events.send(cmd::Command::Single {
                     coord,
                     tile_type: state.tile_type,
                 });
-            } else {
-                let d = (coord.0 - state.last_pos.0);
-                let dir = d.clamp(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
-                let len = d.length() as usize;
-                info!("dir: {:?}", dir);
-                if dir.x == 0.0 || dir.y == 0.0 {
-                    let mut brush = state.last_pos.0 + dir;
-                    for _ in 0..len {
-                        command_events.send(cmd::Command::Single {
-                            coord: IsoCoord(brush, layer),
-                            tile_type: state.tile_type,
-                        });
-                        brush += dir;
-                    }
+            } else if let Some((dir, len)) = line_mode {
+                let mut brush = state.last_pos.0 + dir;
+                for _ in 0..len {
+                    command_events.send(cmd::Command::Single {
+                        coord: IsoCoord(brush, layer),
+                        tile_type: state.tile_type,
+                    });
+                    brush += dir;
                 }
             }
 
