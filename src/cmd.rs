@@ -15,12 +15,16 @@ pub mod predict;
 
 #[derive(Default)]
 pub struct CommandState {
-    undo_stack: Vec<Command>,
+    undo_stack: Vec<(usize, Command)>,
+    transaction: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Command {
-    Single { coord: IsoCoord, tile_type: usize },
+    Set {
+        coords: Vec<IsoCoord>,
+        tile_type: usize,
+    },
     Despawn(IsoCoord),
     Undo,
 }
@@ -34,43 +38,52 @@ fn apply_commands_system(
 ) {
     let mut command_queue: VecDeque<_> = command_events
         .iter()
-        .map(|command| (true, *command))
+        .map(|command| (true, command.clone()))
         .collect();
 
     while let Some((user_generated, command)) = command_queue.pop_back() {
         match command {
-            Command::Single { coord, tile_type } => {
-                let mut found = false;
-                for (_, query_coord, mut sprite) in query.iter_mut() {
-                    if *query_coord == coord {
-                        info!("pick: {:?} {:?}", query_coord, sprite);
-                        if user_generated {
-                            command_state.undo_stack.push(Command::Single {
-                                coord,
-                                tile_type: sprite.index,
-                            });
-                        }
-                        sprite.index = tile_type;
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    info!("spawn");
-                    commands
-                        .spawn_bundle(SpriteSheetBundle {
-                            texture_atlas: iso_state.tileset_atlas.clone(),
-                            sprite: TextureAtlasSprite {
-                                index: tile_type,
-                                ..default()
-                            },
-                            // transform: Transform::from_translation(iso_coord.into()),
-                            ..default()
-                        })
-                        .insert(coord);
+            Command::Set { coords, tile_type } => {
+                let transaction = command_state.transaction;
 
-                    if user_generated {
-                        command_state.undo_stack.push(Command::Despawn(coord));
+                for coord in coords {
+                    let mut found = false;
+                    for (_, query_coord, mut sprite) in query.iter_mut() {
+                        if *query_coord == coord {
+                            info!("pick: {:?} {:?}", query_coord, sprite);
+                            if user_generated {
+                                command_state.undo_stack.push((
+                                    transaction,
+                                    Command::Set {
+                                        coords: vec![coord],
+                                        tile_type: sprite.index,
+                                    },
+                                ));
+                            }
+                            sprite.index = tile_type;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if !found {
+                        info!("spawn");
+                        commands
+                            .spawn_bundle(SpriteSheetBundle {
+                                texture_atlas: iso_state.tileset_atlas.clone(),
+                                sprite: TextureAtlasSprite {
+                                    index: tile_type,
+                                    ..default()
+                                },
+                                // transform: Transform::from_translation(iso_coord.into()),
+                                ..default()
+                            })
+                            .insert(coord);
+
+                        if user_generated {
+                            command_state
+                                .undo_stack
+                                .push((transaction, Command::Despawn(coord)));
+                        }
                     }
                 }
             }
@@ -84,12 +97,19 @@ fn apply_commands_system(
                 }
             }
             Command::Undo => {
-                if let Some(undo_command) = command_state.undo_stack.pop() {
-                    command_queue.push_back((false, undo_command));
+                let mut last_tx = None;
+                while let Some((tx, undo_command)) = command_state.undo_stack.last() {
+                    if last_tx.is_some() && last_tx != Some(*tx) {
+                        break;
+                    }
+                    command_queue.push_back((false, undo_command.clone()));
+                    last_tx = Some(*tx);
+                    command_state.undo_stack.pop();
                 }
             }
         }
     }
+    command_state.transaction += 1;
     // info!("undo stack: {:?}", command_state.undo_stack);
 }
 

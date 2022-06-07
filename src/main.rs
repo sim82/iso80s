@@ -2,7 +2,7 @@ use bevy::{diagnostic::DiagnosticsPlugin, input::system::exit_on_esc_system, pre
 use clap::Parser;
 use iso80s::{
     input::{CursorMarker, InputState},
-    iso::{IsoCoord, IsoPlugin, IsoState},
+    iso::{IsoCoord, IsoState},
 };
 
 #[derive(Parser, Debug)]
@@ -16,6 +16,7 @@ pub struct CmdlineArgs {
 }
 
 fn main() {
+    #[allow(unused)]
     let args = CmdlineArgs::parse();
 
     let mut app = App::new();

@@ -1,17 +1,17 @@
 use bevy::{
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
-    math::{Vec2Swizzles, Vec3Swizzles},
+    input::{mouse::MouseButtonInput, ElementState},
+    math::Vec3Swizzles,
     prelude::*,
 };
 use bevy_egui::{
-    egui::{self, TextureId},
+    egui::{self},
     EguiContext,
 };
 use bevy_mouse_tracking_plugin::{MousePosPlugin, MousePosWorld};
 
 use crate::{
     cmd,
-    iso::{self, IsoCoord, IsoState, PIXEL_TO_ISO},
+    iso::{IsoCoord, IsoState, PIXEL_TO_ISO},
 };
 
 #[derive(Component)]
@@ -46,7 +46,7 @@ fn iso_pick_system(
     let coord = IsoCoord(pick_coord, layer);
 
     let line_mode = if key_input.pressed(KeyCode::LShift) {
-        let d = (coord.0 - state.last_pos.0);
+        let d = coord.0 - state.last_pos.0;
         let dir = d.clamp(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
         let len = d.length() as usize;
         info!("dir: {:?}", dir);
@@ -70,19 +70,23 @@ fn iso_pick_system(
     for event in mouse_button_input_events.iter() {
         if event.state == ElementState::Released && event.button == MouseButton::Left {
             if !key_input.pressed(KeyCode::LShift) {
-                command_events.send(cmd::Command::Single {
-                    coord,
+                command_events.send(cmd::Command::Set {
+                    coords: vec![coord],
                     tile_type: state.tile_type,
                 });
             } else if let Some((dir, len)) = line_mode {
-                let mut brush = state.last_pos.0 + dir;
-                for _ in 0..len {
-                    command_events.send(cmd::Command::Single {
-                        coord: IsoCoord(brush, layer),
-                        tile_type: state.tile_type,
-                    });
-                    brush += dir;
-                }
+                let mut brush = state.last_pos.0;
+
+                let coords = (0..len)
+                    .map(|_| {
+                        brush += dir;
+                        IsoCoord(brush, layer)
+                    })
+                    .collect();
+                command_events.send(cmd::Command::Set {
+                    coords,
+                    tile_type: state.tile_type,
+                });
             }
 
             state.last_pos = coord;

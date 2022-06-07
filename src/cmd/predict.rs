@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 
 use super::prelude::*;
-use crate::iso::prelude::*;
 use bevy::{prelude::*, utils::HashMap};
 use itertools::Itertools;
 
@@ -31,12 +30,8 @@ fn training_system(
     mut command_events: EventReader<Command>,
 ) {
     for command in command_events.iter() {
-        if let Command::Single {
-            coord: IsoCoord(_, layer),
-            tile_type,
-        } = command
-        {
-            let layer = *layer as i32;
+        if let Command::Set { coords, tile_type } = command {
+            let layer = coords.first().map_or(1, |c| c.1 as i32);
             let layer_change = layer - predict_state.last_layer;
             predict_state.history.push_back(ModelBasekey {
                 layer_change,
