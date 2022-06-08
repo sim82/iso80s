@@ -49,12 +49,22 @@ fn iso_pick_system(
         let d = coord.0 - state.last_pos.0;
         let dir = d.clamp(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
         let len = d.length() as usize;
-        info!("dir: {:?}", dir);
         if dir.x == 0.0 || dir.y == 0.0 {
             Some((dir, len))
         } else {
             None
         }
+    } else {
+        None
+    };
+
+    let square_mode = if key_input.pressed(KeyCode::LControl) {
+        let d = coord.0 - state.last_pos.0;
+        let dir_x = d.clamp(Vec2::new(-1.0, 0.0), Vec2::new(1.0, 0.0));
+        let dir_y = d.clamp(Vec2::new(0.0, -1.0), Vec2::new(0.0, 1.0));
+        let len_x = d.x.abs() as usize;
+        let len_y = d.y.abs() as usize;
+        Some((dir_x, dir_y, len_x, len_y))
     } else {
         None
     };
@@ -69,12 +79,7 @@ fn iso_pick_system(
 
     for event in mouse_button_input_events.iter() {
         if event.state == ElementState::Released && event.button == MouseButton::Left {
-            if !key_input.pressed(KeyCode::LShift) {
-                command_events.send(cmd::Command::Set {
-                    coords: vec![coord],
-                    tile_type: state.tile_type,
-                });
-            } else if let Some((dir, len)) = line_mode {
+            if let Some((dir, len)) = line_mode {
                 let mut brush = state.last_pos.0;
 
                 let coords = (0..len)
@@ -85,6 +90,29 @@ fn iso_pick_system(
                     .collect();
                 command_events.send(cmd::Command::Set {
                     coords,
+                    tile_type: state.tile_type,
+                });
+            } else if let Some((mut dir_x, dir_y, len_x, len_y)) = square_mode {
+                let mut brush = state.last_pos.0;
+                let mut coords = Vec::new();
+                for _y in 0..=len_y {
+                    for x in 0..=len_x {
+                        coords.push(IsoCoord(brush, layer));
+                        if x != len_x {
+                            brush += dir_x;
+                        }
+                    }
+                    brush += dir_y;
+                    // reverse x direction (this results in a zig-zag pattern so I don't have to worry about storing the next line start pos)
+                    dir_x *= -1.0;
+                }
+                command_events.send(cmd::Command::Set {
+                    coords,
+                    tile_type: state.tile_type,
+                });
+            } else {
+                command_events.send(cmd::Command::Set {
+                    coords: vec![coord],
                     tile_type: state.tile_type,
                 });
             }
