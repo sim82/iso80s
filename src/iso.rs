@@ -33,7 +33,7 @@ fn iso_coord_update(mut query: Query<(&mut Transform, &IsoCoord), Changed<IsoCoo
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct IsoState {
     pub tileset_image: Handle<Image>,
     pub tileset_atlas: Handle<TextureAtlas>,

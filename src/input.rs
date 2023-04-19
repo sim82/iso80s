@@ -1,13 +1,9 @@
-use bevy::{
-    input::{mouse::MouseButtonInput, ElementState},
-    math::Vec3Swizzles,
-    prelude::*,
-};
+use bevy::{input::mouse::MouseButtonInput, math::Vec3Swizzles, prelude::*};
 use bevy_egui::{
     egui::{self},
-    EguiContext,
+    EguiContext, EguiContexts,
 };
-use bevy_mouse_tracking_plugin::{MousePosPlugin, MousePosWorld};
+use bevy_mouse_tracking_plugin::{mouse_pos::MousePosPlugin, MousePosWorld};
 
 use crate::{
     cmd,
@@ -17,7 +13,7 @@ use crate::{
 #[derive(Component)]
 pub struct CursorMarker;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct InputState {
     pub tile_type: usize,
     pub layer: i32,
@@ -131,7 +127,7 @@ fn key_input_system(mut command_events: EventWriter<cmd::Command>, input: Res<In
 fn input_egui_system(
     mut state: ResMut<InputState>,
     iso_state: Res<IsoState>,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
 ) {
     let texture = *state
         .texture

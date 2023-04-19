@@ -18,7 +18,7 @@ const DEPTH: usize = 2;
 type ModelKey = (ModelBasekey, ModelBasekey);
 type ModelKey2 = (ModelBasekey, ModelBasekey, ModelBasekey);
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct PredictState {
     history: VecDeque<ModelBasekey>,
     model: HashMap<ModelKey, HashMap<ModelBasekey, usize>>,

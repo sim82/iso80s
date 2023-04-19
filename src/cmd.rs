@@ -13,7 +13,7 @@ pub mod prelude {
 
 pub mod predict;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct CommandState {
     undo_stack: Vec<(usize, Command)>,
     transaction: usize,
