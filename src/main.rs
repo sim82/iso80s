@@ -1,9 +1,19 @@
-use bevy::{diagnostic::DiagnosticsPlugin, input::system::exit_on_esc_system, prelude::*};
+use bevy::{app::AppExit, diagnostic::DiagnosticsPlugin, prelude::*};
+use bevy_egui::EguiUserTextures;
 use clap::Parser;
 use iso80s::{
     input::{CursorMarker, InputState},
     iso::{IsoCoord, IsoState},
 };
+
+pub fn exit_on_esc_system(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut app_exit_events: EventWriter<AppExit>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        app_exit_events.send_default();
+    }
+}
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -22,7 +32,7 @@ fn main() {
     let mut app = App::new();
     // bevy plugins
     app.add_plugins(DefaultPlugins)
-        .add_plugin(DiagnosticsPlugin)
+        // .add_plugin(DiagnosticsPlugin)
         .add_system(exit_on_esc_system)
         .insert_resource(Msaa::default())
         .add_plugins(iso80s::DefaultPlugins)
@@ -32,10 +42,11 @@ fn main() {
     #[cfg(feature = "inspector")]
     {
         if args.world_inspector {
-            app.add_plugin(bevy_inspector_egui::WorldInspectorPlugin::new());
+            app.add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::default());
         }
     }
-
+    app.add_plugin(bevy_egui::EguiPlugin);
+    app.init_resource::<EguiUserTextures>();
     app.add_system(update_preview_tile_system);
     app.run();
 }
@@ -76,7 +87,7 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
             //let index = if iso_coord.1 == 0.0 { 0 } else { 8 };
             let index = 15;
             commands
-                .spawn_bundle(SpriteSheetBundle {
+                .spawn(SpriteSheetBundle {
                     texture_atlas: iso_state.tileset_atlas.clone(),
                     sprite: TextureAtlasSprite { index, ..default() },
                     // transform: Transform::from_translation(iso_coord.into()),
@@ -86,7 +97,7 @@ fn setup_system(mut commands: Commands, iso_state: Res<IsoState>) {
         }
     }
     commands
-        .spawn_bundle(SpriteSheetBundle {
+        .spawn(SpriteSheetBundle {
             texture_atlas: iso_state.tileset_atlas.clone(),
             sprite: TextureAtlasSprite {
                 index: 32,

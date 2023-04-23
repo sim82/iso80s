@@ -68,7 +68,7 @@ fn apply_commands_system(
                     if !found {
                         info!("spawn");
                         commands
-                            .spawn_bundle(SpriteSheetBundle {
+                            .spawn(SpriteSheetBundle {
                                 texture_atlas: iso_state.tileset_atlas.clone(),
                                 sprite: TextureAtlasSprite {
                                     index: tile_type,

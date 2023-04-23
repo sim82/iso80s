@@ -1,4 +1,4 @@
-use bevy::prelude::PluginGroup;
+use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 
 pub mod camera;
 pub mod cmd;
@@ -8,12 +8,12 @@ pub mod iso;
 pub struct DefaultPlugins;
 
 impl PluginGroup for DefaultPlugins {
-    fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
-        group
+    fn build(self) -> bevy::app::PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(camera::CameraPlugin)
             .add(cmd::CommandPlugin)
             .add(cmd::predict::PredictPlugin)
             .add(iso::IsoPlugin)
-            .add(input::InputPlugin);
+            .add(input::InputPlugin)
     }
 }

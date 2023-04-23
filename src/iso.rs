@@ -45,7 +45,8 @@ pub fn iso_startup_system(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let texture_handle = asset_server.load("iso_tiles_rgb.png");
-    let atlas = TextureAtlas::from_grid(texture_handle.clone(), Vec2::splat(32.0), 8, 8);
+    let atlas =
+        TextureAtlas::from_grid(texture_handle.clone(), Vec2::splat(32.0), 8, 8, None, None);
     let atlas_handle = texture_atlases.add(atlas);
     iso_state.tileset_atlas = atlas_handle;
     iso_state.tileset_image = texture_handle;

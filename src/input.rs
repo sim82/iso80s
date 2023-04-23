@@ -1,4 +1,8 @@
-use bevy::{input::mouse::MouseButtonInput, math::Vec3Swizzles, prelude::*};
+use bevy::{
+    input::{mouse::MouseButtonInput, ButtonState},
+    math::Vec3Swizzles,
+    prelude::*,
+};
 use bevy_egui::{
     egui::{self},
     EguiContext, EguiContexts,
@@ -74,7 +78,7 @@ fn iso_pick_system(
     }
 
     for event in mouse_button_input_events.iter() {
-        if event.state == ElementState::Released && event.button == MouseButton::Left {
+        if event.state == ButtonState::Released && event.button == MouseButton::Left {
             if let Some((dir, len)) = line_mode {
                 let mut brush = state.last_pos.0;
 
@@ -161,7 +165,7 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputState>()
-            .add_plugin(MousePosPlugin::SingleCamera)
+            .add_plugin(MousePosPlugin)
             .add_system(iso_pick_system)
             .add_system(input_egui_system)
             .add_system(key_input_system);

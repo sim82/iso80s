@@ -9,6 +9,7 @@ edition = "2021"
 opt-level = 3
 
 [features]
+default = ["inspector"]
 inspector = ["bevy-inspector-egui"]
 
 [dependencies]
